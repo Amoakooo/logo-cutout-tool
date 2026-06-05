@@ -118,6 +118,21 @@
       cursor: default;
     }
 
+    .save-link {
+      display: none;
+      width: 100%;
+      min-height: 42px;
+      margin-top: 14px;
+      padding: 11px 14px;
+      border-radius: 8px;
+      background: #0d8f5b;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+    }
+
     .secondary {
       background: #e7ecf2;
       color: #17202a;
@@ -218,6 +233,7 @@
       </div>
 
       <button id="download" disabled>下载透明 PNG</button>
+      <a id="saveLink" class="save-link" href="#" download="transparent.png" target="_blank" rel="noopener">打开/长按保存 PNG</a>
       <button id="pick" class="secondary" disabled>点选封闭背景</button>
       <button id="clearPicks" class="secondary" disabled>清空点选</button>
       <p id="status" class="status">等待图片</p>
@@ -250,6 +266,7 @@
     const toleranceValue = document.getElementById("toleranceValue");
     const softnessValue = document.getElementById("softnessValue");
     const download = document.getElementById("download");
+    const saveLink = document.getElementById("saveLink");
     const pick = document.getElementById("pick");
     const clearPicks = document.getElementById("clearPicks");
     const status = document.getElementById("status");
@@ -258,9 +275,22 @@
     let currentName = "transparent.png";
     let manualSeeds = [];
     let picking = false;
+    let currentPngUrl = "";
 
     function setStatus(text) {
       status.textContent = text;
+    }
+
+    function canvasToBlob(canvas) {
+      return new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    }
+
+    function setSaveLink(blob) {
+      if (currentPngUrl) URL.revokeObjectURL(currentPngUrl);
+      currentPngUrl = URL.createObjectURL(blob);
+      saveLink.href = currentPngUrl;
+      saveLink.download = currentName;
+      saveLink.style.display = "block";
     }
 
     function fitCanvas(canvas, image) {
@@ -432,6 +462,7 @@
       download.disabled = false;
       pick.disabled = false;
       clearPicks.disabled = manualSeeds.length === 0;
+      saveLink.style.display = "none";
       setStatus(manualSeeds.length ? `处理完成，已点选 ${manualSeeds.length} 处` : "处理完成，可以下载");
     }
 
@@ -447,6 +478,9 @@
         currentImage = image;
         currentName = file.name.replace(/\.[^.]+$/, "") + "_transparent.png";
         manualSeeds = [];
+        if (currentPngUrl) URL.revokeObjectURL(currentPngUrl);
+        currentPngUrl = "";
+        saveLink.style.display = "none";
         render();
       };
       image.src = URL.createObjectURL(file);
@@ -501,11 +535,33 @@
     sourceCanvas.addEventListener("click", event => addSeedFromCanvas(event, sourceCanvas));
     resultCanvas.addEventListener("click", event => addSeedFromCanvas(event, resultCanvas));
 
-    download.addEventListener("click", () => {
+    download.addEventListener("click", async () => {
+      const blob = await canvasToBlob(resultCanvas);
+      if (!blob) {
+        setStatus("生成 PNG 失败，请换一张图片再试");
+        return;
+      }
+
+      setSaveLink(blob);
+
+      const file = new File([blob], currentName, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+        try {
+          await navigator.share({ files: [file], title: "透明 PNG" });
+          setStatus("已打开手机分享/保存面板");
+          return;
+        } catch (error) {
+          setStatus("分享面板已关闭，可点绿色按钮打开或长按保存");
+        }
+      }
+
       const link = document.createElement("a");
       link.download = currentName;
-      link.href = resultCanvas.toDataURL("image/png");
+      link.href = currentPngUrl;
+      document.body.appendChild(link);
       link.click();
+      link.remove();
+      setStatus("如果没有自动下载，请点绿色按钮打开或长按保存");
     });
   </script>
 </body>
