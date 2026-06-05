@@ -10,16 +10,6 @@
 4. 如有封闭背景残留，点击“点选封闭背景”，再点一下要清除的位置
 5. 点击“下载透明 PNG”
 
-## 部署到 GitHub Pages
-
-1. 在 GitHub 新建一个仓库
-2. 上传本文件夹里的 `index.html` 和 `README.md`
-3. 打开仓库的 `Settings`
-4. 进入 `Pages`
-5. 在 `Build and deployment` 里选择 `Deploy from a branch`
-6. Branch 选择 `main`，文件夹选择 `/root`
-7. 保存后等待 GitHub 生成访问链接
-
 ## 适合处理
 
 - 白底产品图
