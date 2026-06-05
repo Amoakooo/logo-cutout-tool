@@ -1,0 +1,1 @@
+# logo-cutout-tool
